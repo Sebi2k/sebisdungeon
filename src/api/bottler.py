@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends
 from enum import Enum
 from pydantic import BaseModel
 from src.api import auth
+import sqlalchemy
+from src import database as db
 
 router = APIRouter(
     prefix="/bottler",
@@ -26,7 +28,10 @@ def get_bottle_plan():
     """
     Go from barrel to bottle.
     """
-
+    sql = """SELECT num_red_ml FROM global_inventory"""
+    with db.engine.begin() as connection:
+        result = connection.execute(sqlalchemy.text(sql))
+    print(result.first().num_red_ml)
     # Each bottle has a quantity of what proportion of red, blue, and
     # green potion to add.
     # Expressed in integers from 1 to 100 that must sum up to 100.
