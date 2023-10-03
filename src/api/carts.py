@@ -54,8 +54,19 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-
+    # not buying potions if we dont have the inventory
     with db.engine.begin() as connection:
+        sql = "SELECT num_red_potions FROM global_inventory"
+        result = connection.execute(sqlalchemy.text(sql))
+        first_row = result.first()
+
+        if not first_row.num_red_potions:
+            return {"total_potions_bought": 0, "total_gold_paid": 0}
+
+
+    # buying the potion
+    with db.engine.begin() as connection:
+
         sql = "UPDATE global_inventory SET gold = gold + 50"
         connection.execute(sqlalchemy.text(sql))
 
