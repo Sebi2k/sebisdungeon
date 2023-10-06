@@ -20,9 +20,6 @@ def get_inventory():
         results = connection.execute(sqlalchemy.text(sql))
         first_row = results.first()
     
-    if not first_row.num_red_potions or not first_row.num_red_ml or not first_row.gold:
-            return {"number_of_potions": 0, "ml_in_barrels": 0, "gold": 0}
-
 
     return {"number_of_potions": first_row.num_red_potions, "ml_in_barrels": first_row.num_red_ml, "gold": first_row.gold}
 
