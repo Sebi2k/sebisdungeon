@@ -31,22 +31,22 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
         
         # for every barrel delivered add ml and sub gold
         for barrel in barrels_delivered:
-            if (barrel.potion_type == [100, 0, 0, 0]):
+            if (barrel.potion_type == [1, 0, 0, 0]):
                 s = "UPDATE global_inventory SET gold = gold - " + str(first_row.gold - barrel.price)
                 connection.execute(sqlalchemy.text(s))
                 q = "UPDATE global_inventory SET num_red_ml = num_red_ml + " + str(first_row.num_red_ml + barrel.ml_per_barrel)
                 connection.execute(sqlalchemy.text(q))
             
-            elif (barrel.potion_type == [0, 100, 0, 0]):
+            elif (barrel.potion_type == [0, 1, 0, 0]):
                 l = "UPDATE global_inventory SET gold = gold - " + str(first_row.gold - barrel.price)
                 connection.execute(sqlalchemy.text(l))
-                b = "UPDATE global_inventory SET num_red_ml = num_red_ml + " + str(first_row.num_green_ml + barrel.ml_per_barrel)
+                b = "UPDATE global_inventory SET num_green_ml = num_green_ml + " + str(first_row.num_green_ml + barrel.ml_per_barrel)
                 connection.execute(sqlalchemy.text(b))
 
-            elif (barrel.potion_type == [0, 0, 100, 0]):
+            elif (barrel.potion_type == [0, 0, 1, 0]):
                 a = "UPDATE global_inventory SET gold = gold - " + str(first_row.gold - barrel.price)
                 connection.execute(sqlalchemy.text(a))
-                d = "UPDATE global_inventory SET num_red_ml = num_red_ml + " + str(first_row.num_blue_ml + barrel.ml_per_barrel)
+                d = "UPDATE global_inventory SET num_blue_ml = num_blue_ml + " + str(first_row.num_blue_ml + barrel.ml_per_barrel)
                 connection.execute(sqlalchemy.text(d))
 
     return "OK"
