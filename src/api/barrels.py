@@ -38,7 +38,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
                 connection.execute(sqlalchemy.text(q))
             
             elif (barrel.potion_type == [0, 1, 0, 0]):
-                l = "UPDATE global_inventory SET gold = gold - " + str(first_row.gold - barrel.price)
+                l = f"UPDATE global_inventory SET gold = gold - {str(first_row.gold - barrel.price)}"
                 connection.execute(sqlalchemy.text(l))
                 b = "UPDATE global_inventory SET num_green_ml = num_green_ml + " + str(first_row.num_green_ml + barrel.ml_per_barrel)
                 connection.execute(sqlalchemy.text(b))
