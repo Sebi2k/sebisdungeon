@@ -32,7 +32,7 @@ def get_catalog():
                 }
             ])
         
-    if (first_row.num_red_potions > 0):
+    if (first_row.num_green_potions > 0):
         catalog.append([
                 {
                     "sku": "GREEN_POTION_0",
