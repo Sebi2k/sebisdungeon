@@ -16,13 +16,15 @@ def get_inventory():
     """ """
     
     with db.engine.begin() as connection:
-        sql = "SELECT num_red_potions, num_red_ml, gold, num_blue_ml, num_blue_potions, num_green_ml, num_green_potions from global_inventory"
+        sql = "SELECT num_red_ml, gold, num_blue_ml, num_green_ml, num_dark_ml from global_inventory"
         results = connection.execute(sqlalchemy.text(sql))
         first_row = results.first()
-        potions = first_row.num_red_potions + first_row.num_green_potions + first_row.num_blue_potions
         ml = first_row.num_red_ml + first_row.num_green_ml + first_row.num_blue_ml
+        sql2 = "SELECT SUM(quantity) AS all_potions FROM catalog"
+        results = connection.execute(sqlalchemy.text(sql2))
 
-    return {"number_of_potions": potions, "ml_in_barrels": ml, "gold": first_row.gold}
+
+    return {"number_of_potions": results.first().all_potions, "ml_in_barrels": ml, "gold": first_row.gold}
 
 class Result(BaseModel):
     gold_match: bool

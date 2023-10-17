@@ -22,29 +22,30 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
 
     with db.engine.begin() as connection:
         for potion in potions_delivered:
-            if (potion.potion_type == [100, 0, 0, 0]):
-                # incrementing numredpotions by quantity of potions_delivered
-                sql = "UPDATE global_inventory SET num_red_potions = num_red_potions + " + str(potion.quantity)
-                connection.execute(sqlalchemy.text(sql))
-                # decrementing numredml by quantity of potions_delivered times 100 (100 ml in potion)
-                sql2 = "UPDATE global_inventory SET num_red_ml = num_red_ml - " + str(potion.quantity * 100)
-                connection.execute(sqlalchemy.text(sql2))
+            quantity = potion.quantity
+            r, g, b, d = potion.potion_type
+            connection.execute(sqlalchemy.text(
+                    """
+                    UPDATE catalog 
+                    SET quantity = quantity + :quantity
+                    WHERE 
+                    num_red_ml = :num_red_ml AND
+                    num_green_ml = :num_green_ml AND
+                    num_blue_ml = :num_blue_ml AND
+                    num_dark_ml = :num_dark_ml
+                    """
+                ), [{"quantity": quantity, "num_red_ml": r, "num_green_ml": g, "num_blue_ml": b, "num_dark_ml": d}])
             
-            if (potion.potion_type == [0, 100, 0, 0]):
-                # incrementing numredpotions by quantity of potions_delivered
-                sql = "UPDATE global_inventory SET num_green_potions = num_green_potions + " + str(potion.quantity)
-                connection.execute(sqlalchemy.text(sql))
-                # decrementing numredml by quantity of potions_delivered times 100 (100 ml in potion)
-                sql2 = "UPDATE global_inventory SET num_green_ml = num_green_ml - " + str(potion.quantity * 100)
-                connection.execute(sqlalchemy.text(sql2))
+            connection.execute(sqlalchemy.text(
+                    """
+                    UPDATE global_inventory 
+                    SET num_red_ml = num_red_ml - :num_red_ml, 
+                    num_green_ml = num_green_ml - :num_green_ml, 
+                    num_blue_ml = num_blue_ml - :num_blue_ml, 
+                    num_dark_ml = num_dark_ml - :num_dark_ml
+                    """
+                ), [{"num_red_ml": r*quantity, "num_green_ml": g*quantity, "num_blue_ml": b*quantity, "num_dark_ml": d*quantity}])
 
-            if (potion.potion_type == [0, 0, 100, 0]):
-                # incrementing numredpotions by quantity of potions_delivered
-                sql = "UPDATE global_inventory SET num_red_potions = num_blue_potions + " + str(potion.quantity)
-                connection.execute(sqlalchemy.text(sql))
-                # decrementing numredml by quantity of potions_delivered times 100 (100 ml in potion)
-                sql2 = "UPDATE global_inventory SET num_red_ml = num_blue_ml - " + str(potion.quantity * 100)
-                connection.execute(sqlalchemy.text(sql2))
 
     return "OK"
 
