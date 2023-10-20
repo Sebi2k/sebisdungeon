@@ -25,25 +25,21 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
             quantity = potion.quantity
             r, g, b, d = potion.potion_type
             connection.execute(sqlalchemy.text(
-                    """
-                    UPDATE catalog 
+                    """UPDATE catalog 
                     SET quantity = quantity + :quantity
                     WHERE 
                     num_red_ml = :num_red_ml AND
                     num_green_ml = :num_green_ml AND
                     num_blue_ml = :num_blue_ml AND
-                    num_dark_ml = :num_dark_ml
-                    """
+                    num_dark_ml = :num_dark_ml"""
                 ), [{"quantity": quantity, "num_red_ml": r, "num_green_ml": g, "num_blue_ml": b, "num_dark_ml": d}])
             
             connection.execute(sqlalchemy.text(
-                    """
-                    UPDATE global_inventory 
+                    """UPDATE global_inventory 
                     SET num_red_ml = num_red_ml - :num_red_ml, 
                     num_green_ml = num_green_ml - :num_green_ml, 
                     num_blue_ml = num_blue_ml - :num_blue_ml, 
-                    num_dark_ml = num_dark_ml - :num_dark_ml
-                    """
+                    num_dark_ml = num_dark_ml - :num_dark_ml"""
                 ), [{"num_red_ml": r*quantity, "num_green_ml": g*quantity, "num_blue_ml": b*quantity, "num_dark_ml": d*quantity}])
 
 
@@ -60,26 +56,16 @@ def get_bottle_plan():
     # Expressed in integers from 1 to 100 that must sum up to 100.
 
     # Initial logic: bottle all barrels into red potions.
+    plan = []
     with db.engine.begin() as connection:
-        sql = "SELECT num_red_ml, num_green_ml, num_blue_ml FROM global_inventory"
-        result = connection.execute(sqlalchemy.text(sql))
-        first_row = result.first()
-        # find largest amount of potions that can be created as a whole number
-        numR = first_row.num_red_ml // 100
-        numG = first_row.num_green_ml // 100
-        numB = first_row.num_blue_ml // 100
+        sql = "SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"
+        results = connection.execute(sqlalchemy.text(sql))
+        r, g, b, d, = results.first()
 
-    return [
-            {
-                "potion_type": [100, 0, 0, 0],
-                "quantity": numR,
-            },
-            {
-                "potion_type": [0, 100, 0, 0],
-                "quantity": numG,
-            },
-            {
-                "potion_type": [0, 0, 100, 0],
-                "quantity": numB,
-            }
-        ]
+        results = connection.execute(sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, quantity FROM catalog ORDER BY quantity"))
+
+        for num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, quantity in results:
+            if num_red_ml <= r and num_green_ml <= g and num_blue_ml <= b and num_dark_ml <= d:
+                plan.append({"potion_type": [num_red_ml, num_green_ml,num_blue_ml, num_dark_ml], "quantity": 1,})
+
+    return plan

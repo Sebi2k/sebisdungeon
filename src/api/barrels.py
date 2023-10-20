@@ -41,12 +41,12 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
             gold += (barrel.price* barrel.quantity)
 
     with db.engine.begin() as connection:
-        sql = """UPDATE global_inventory SET gold = gold - :gold,
+        
+        connection.execute(sqlalchemy.text("""UPDATE global_inventory SET gold = gold - :gold,
         num_red_ml = num_red_ml + :num_red_ml,
         num_green_ml = num_green_ml + :num_green_ml,
         num_blue_ml = num_blue_ml + :num_blue_ml,
-        num_dark_ml = num_dark_ml + :num_dark_ml"""
-        connection.execute(sqlalchemy.text(sql, [{"gold": gold, "num_red_ml": red, "num_green_ml": green, "num_dark_ml": dark}]))
+        num_dark_ml = num_dark_ml + :num_dark_ml"""), [{"gold": gold, "num_red_ml": red, "num_green_ml": green, "num_blue_ml": blue, "num_dark_ml": dark}])
 
     return "OK"
 
@@ -63,23 +63,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         sql = "SELECT gold FROM global_inventory"
         result = connection.execute(sqlalchemy.text(sql))
         row = result.first()
-        
-        if row.gold <= 0:
-            plan.append({
-                "sku": "SMALL_GREEN_BARREL",
-                "quantity": 1,
-            })
-        
-            plan.append({
-                "sku": "SMALL_BLUE_BARREL",
-                "quantity": 1,
-            })
-        
-            plan.append({
-                "sku": "SMALL_RED_BARREL",
-                "quantity": 1,
-            })
-
+        gold = row.gold
+        for barrel in wholesale_catalog:
+            sku = barrel.sku
+            if sku == "SMALL_GREEN_BARREL" or sku == "SMALL_BLUE_BARREL" or sku == "SMALL_RED_BARREL":
+                if gold >= barrel.price:
+                    plan.append({"sku": sku, "amount": 1})
 
     return plan
     
