@@ -66,6 +66,10 @@ def get_bottle_plan():
 
         for num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, quantity in results:
             if num_red_ml <= r and num_green_ml <= g and num_blue_ml <= b and num_dark_ml <= d:
+                r -= num_red_ml
+                g -= num_green_ml
+                b -= num_blue_ml
+                d -= num_dark_ml
                 plan.append({"potion_type": [num_red_ml, num_green_ml,num_blue_ml, num_dark_ml], "quantity": 1,})
 
     return plan
