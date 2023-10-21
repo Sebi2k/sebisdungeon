@@ -16,10 +16,10 @@ def get_catalog():
 
     with db.engine.begin() as connection:
         # query catalog for items in stock
-        result = connection.execute(sqlalchemy.text("""SELECT sku, name, quantity, price, ARRAY[red_ml, green_ml, blue_ml, dark_ml] AS potion_type
+        result = connection.execute(sqlalchemy.text("""SELECT sku, name, quantity, price, ARRAY[num_red_ml, num_green_ml, num_blue_ml, num_dark_ml] AS potion_type
                 FROM catalog
-                WHERE stock > 0
-                ORDER BY stock DESC
+                WHERE quantity > 0
+                ORDER BY quantity DESC
                 LIMIT 6"""))
         
         for sku, name, quantity, price, potion_type in result:
