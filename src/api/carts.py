@@ -60,30 +60,32 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    total_gold = 0
-    total_potions = 0
-
+    all_potions = 0
+    all_gold = 0
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("""
-                SELECT cart_items.quantity, catalog.quantity, catalog.price
-                FROM cart_items
-                JOIN catalog ON cart_items.catalog_id = catalog.id
-                WHERE cart_items.cart_id = :cart_id"""), [{"cart_id": cart_id}])
-
-        for quantity, quant, price in result:
-            if quant < quantity:
-                return {"total_potions_bought": 0, "total_gold_paid": 0}
-            
-            total_gold += price * quantity
-            total_potions += quantity
-
         
-        connection.execute(sqlalchemy.text("""
-                UPDATE catalog
-                SET quantity = catalog.quantity - cart_items.quantity
+        result = connection.execute(sqlalchemy.text(
+                """SELECT catalog.id, cart_items.quantity, catalog.price, catalog.sku, carts.customer_name
                 FROM cart_items
-                WHERE catalog.id = cart_items.catalog_id AND cart_items.cart_id = :cart_id"""), [{"cart_id": cart_id}])
+                    JOIN catalog ON cart_items.catalog_id = catalog.id
+                    JOIN carts ON cart_items.cart_id = carts.id
+                WHERE cart_items.cart_id = :cart_id """),
+                [{"cart_id": cart_id}])
 
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = gold + :total_gold"), [{"total_gold": total_gold}])
+        for catalog_id, quantity, price, sku, customer_name in result:
+            all_gold += price * quantity
+            all_potions += quantity
 
-    return {"total_potions_bought": total_potions, "total_gold_paid": total_gold}
+            result = connection.execute(sqlalchemy.text("INSERT INTO transactions (description, cart_id) VALUES (:description, :cart_id) RETURNING id"), 
+                                        [{"description": f"Sold {quantity} {sku} to {customer_name} for {price} gold each", "cart_id": cart_id}])
+            
+            transaction_id = result.scalar_one()
+
+            connection.execute(sqlalchemy.text("INSERT INTO catalog_ledger (transaction_id, catalog_id, delta)VALUES (:transaction_id, :catalog_id, :delta) "),
+                                [{"transaction_id": transaction_id, "catalog_id": catalog_id, "delta": -quantity}])
+            
+            connection.execute(sqlalchemy.text("INSERT INTO global_ledger (transaction_id, type, delta)VALUES (:transaction_id, :type, :delta)"),
+                    [{"transaction_id": transaction_id, "type": "gold", "delta": price*quantity}])
+
+
+    return {"total_potions_bought": all_potions, "total_gold_paid": all_gold}

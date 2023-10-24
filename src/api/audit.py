@@ -14,17 +14,31 @@ router = APIRouter(
 @router.get("/inventory")
 def get_inventory():
     """ """
-    
     with db.engine.begin() as connection:
-        sql = "SELECT num_red_ml, gold, num_blue_ml, num_green_ml, num_dark_ml from global_inventory"
+        sql = "SELECT type, SUM(delta) AS sum FROM global_ledger GROUP BY type"
         results = connection.execute(sqlalchemy.text(sql))
-        first_row = results.first()
-        ml = first_row.num_red_ml + first_row.num_green_ml + first_row.num_blue_ml
-        sql2 = "SELECT SUM(quantity) AS all_potions FROM catalog"
-        results = connection.execute(sqlalchemy.text(sql2))
+        r = g = b = d = gold = None
 
+        for type, sum in results:
+            print(type,sum)
+            if type == 'num_red_ml':
+                r = sum
+            elif type == 'num_green_ml':
+                g = sum
+            elif type == 'num_blue_ml':
+                b = sum
+            elif type == 'num_dark_ml':
+                d = sum
+            elif type == 'gold':
+                gold = sum
+        
+        ml = r+g+b+d
 
-    return {"number_of_potions": results.first().all_potions, "ml_in_barrels": ml, "gold": first_row.gold}
+        result = connection.execute(sqlalchemy.text("SELECT SUM(delta) AS potions FROM catalog_ledger"))
+
+    return {"number_of_potions": result.first().potions, "ml_in_barrels": ml, "gold": gold}
+
+    
 
 class Result(BaseModel):
     gold_match: bool

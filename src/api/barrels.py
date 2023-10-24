@@ -30,13 +30,13 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
         for barrel in barrels_delivered:
             type = ''
             if barrel.potion_type == [1,0,0,0]:
-                type = 'red'
+                type = 'num_red_ml'
             elif barrel.potion_type == [0,1,0,0]:
-                type = 'green'
+                type = 'num_green_ml'
             elif barrel.potion_type == [0,0,1,0]:
-                type = 'blue'
+                type = 'num_blue_ml'
             elif barrel.potion_type == [0,0,0,1]:
-                type = 'dark'
+                type = 'num_dark_ml'
             
             gold_delta = -(barrel.price * barrel.quantity)
             ml_delta = barrel.ml_per_barrel * barrel.quantity

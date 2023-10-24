@@ -15,19 +15,24 @@ def get_catalog():
     catalog = []
 
     with db.engine.begin() as connection:
-        # query catalog for items in stock
-        result = connection.execute(sqlalchemy.text("""SELECT sku, name, quantity, price, ARRAY[num_red_ml, num_green_ml, num_blue_ml, num_dark_ml] AS potion_type
-                FROM catalog
-                WHERE quantity > 0
-                ORDER BY quantity DESC
-                LIMIT 6"""))
-        
-        for sku, name, quantity, price, potion_type in result:
-            item = {"sku": sku,
+            result = connection.execute(sqlalchemy.text(
+                    """SELECT cat.sku, cat.name, l_c.quantity, cat.price, ARRAY[cat.num_red_ml, cat.num_green_ml, cat.num_blue_ml, cat.num_dark_ml] AS potion_type
+                    FROM catalog AS cat
+                    JOIN (SELECT catalog_id, SUM(delta) AS quantity
+                          FROM catalog_ledger
+                          GROUP BY catalog_id) 
+                          AS l_c ON cat.id = l_c.catalog_id
+                    WHERE l_c.quantity > 0
+                    ORDER BY l_c.quantity DESC LIMIT 5"""))
+            
+            for sku, name, quantity, price, potion_type in result:
+                potion = {
+                    "sku": sku,
                     "name": name,
                     "quantity": quantity,
                     "price": price,
-                    "potion_type": potion_type}
-            catalog.append(item)
+                    "potion_type": potion_type
+                }
+                catalog.append(potion)
 
     return catalog
