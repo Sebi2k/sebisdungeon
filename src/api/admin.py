@@ -33,7 +33,8 @@ def reset():
                 sqlalchemy.text(
                     """INSERT INTO global_ledger (transaction_id, type, delta)
                     VALUES (:transaction_id, :type, :delta)"""
-                ), [{"transaction_id": t_id, "type": "gold", "delta": 100},{"transaction_id": t_id, "type": "num_red_ml", "delta": 0},{"transaction_id": t_id, "type": "num_green_ml", "delta": 0},{"transaction_id": t_id, "type": "num_blue_ml", "delta": 0},{"transaction_id": t_id, "type": "num_dark_ml", "delta": 0}])
+                ), [{"transaction_id": t_id, "type": "gold", "delta": 100},{"transaction_id": t_id, "type": "num_red_ml", "delta": 0},{"transaction_id": t_id, "type": "num_green_ml", "delta": 0},
+                    {"transaction_id": t_id, "type": "num_blue_ml", "delta": 0},{"transaction_id": t_id, "type": "num_dark_ml", "delta": 0}])
             
             connection.execute(
                 sqlalchemy.text("INSERT INTO catalog_ledger (transaction_id, catalog_id, delta) VALUES (:transaction_id, Null, 0)"  
