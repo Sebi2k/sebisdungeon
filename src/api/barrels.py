@@ -3,7 +3,6 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
-from sqlalchemy.exc import DBAPIError
 
 
 router = APIRouter(
@@ -76,5 +75,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 if gold >= barrel.price and barrel.quantity >= 1:
                     plan.append({"sku": sku, "quantity": 1})
 
+    print("Barrels purchase plan: "+str(plan))
     return plan
     
