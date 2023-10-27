@@ -73,6 +73,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             sku = barrel.sku
             if sku == "MINI_GREEN_BARREL" or sku == "MINI_BLUE_BARREL" or sku == "MINI_RED_BARREL":
                 if gold >= barrel.price and barrel.quantity >= 1:
+                    gold -= barrel.price
                     plan.append({"sku": sku, "quantity": 1})
 
     print("Barrels purchase plan: "+str(plan))
