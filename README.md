@@ -113,3 +113,60 @@ I encouraged many of you to just use an in-memory structure to handle management
 ### Audit
 If you haven’t already, make sure the audit inventory endpoint correctly reflects your gold, number of potions, and number of mls.
 
+## Version 4 - Ledgers
+
+In the fourth version of central coast cauldrons, you will ledgerize your database. Rather than updating inventory values (gold, ml, and potion amounts) directly, you will instead just record changes to values. When calculating the amount of inventory you have, you will instead SUM up your ledger on-the-fly. By doing so, you gain several new advantages:
+* You can gain a history of changes made over time
+* You can see what your historical inventory levels were at any point in time
+* You can reconcile what events caused discrepencies in your inventory levels and undo those events independently of other events
+
+To gain full points on this version, you must convert gold, ml, and potion inventory tracking to a ledgerized design.
+
+### Example of a ledger design
+For a concrete example of how you would build a ledger, let's say I was building a database to record the movement of money between groups of people. I could decide I want to model out three entities:
+* accounts - An entity representing each person's account. This would include things like the account holder's name, etc.
+* account_transactions - An entity representing discrete transactions on people's accounts. This might be something such as Alice transfers Bob $50.
+* account_ledger_entries - An entity representing ledger entries aka modifications to people's account balances.
+
+For account_ledger_entries, we have these columns:
+* id - The primary key
+* account_id - A foreign key reference to the accounts table
+* account_transaction_id - A foreign key reference to the account_transactions table
+* change - An integer field that represents how much to increase or decrease the account value
+
+For account_transactions, we have these columns:
+* id - The primary key
+* created_at - When the transaction occurred auto-assigned by current timestamp
+* description - A description of the transaction 
+
+If I wanted to record the transaction between Alice and Bob, I would add one row to the account_transactions table:
+```SQL
+INSERT INTO account_transactions (description) VALUES ('Alice paying back Bob the $50 he lent her');
+```
+and two rows to the account_ledger_entries table:
+```SQL
+INSERT INTO account_ledger_entries (account_id, account_transaction_id, change)
+VALUES
+(:alice_account_id, :transaction_id, -50),
+(:bob_account_id, :transaction_id, 50);
+```
+
+If I wanted to then get Bob's current account balance, I could then run the following query:
+```SQL
+SELECT SUM(change) AS balance
+FROM account_ledger_entries
+WHERE account_id = :bob_account_id;
+```
+
+## Version 5 - Order Search
+
+This is the final version of your potion shop. You will now add search functionality to your backend that will power the search orders page on https://potion-exchange.vercel.app/.
+<img width="622" alt="image" src="https://github.com/jackalnom/centralcoastcauldrons/assets/26583819/9bd9cee7-973c-4cc5-9676-a0f874b6ce6d">
+
+In the latest pull of carts.py, it now contains a new search endpoint. Do not change the method signature of this endpoint, and ensure that the format of what you return matches the example JSON.
+
+Additionally, make sure you pull the latest server.py. It includes a CORS configuration that is necessary for the front-end to call your webservice.
+
+Once you've implemented the search endpoint, make sure you test your work using the search orders page mentioned above. Filtering, paging, and sorting must all work correctly to get full points on this assignment.
+
+As a reference, feel free to look at this lecture where I cover one way of implementing such a search functionality: https://observablehq.com/@calpoly-pierce/python-connectivity#cell-70.
