@@ -53,19 +53,97 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+    # Use reflection to derive table schema. You can also code this in manually.
+    metadata_obj = sqlalchemy.MetaData()
 
+    carts = sqlalchemy.Table("carts", metadata_obj, autoload_with=db.engine)
+    catalog = sqlalchemy.Table("catalog", metadata_obj, autoload_with=db.engine)
+    catalog_ledger = sqlalchemy.Table("catalog_ledger", metadata_obj, autoload_with=db.engine)
+    transactions = sqlalchemy.Table("transactions", metadata_obj, autoload_with=db.engine)
+
+    if search_page != "":
+        offset = int(search_page)
+        if 0 > (offset - 5): 
+            previous = ""
+        else: 
+            previous = str(offset - 5)
+    else:
+            offset = 0
+            previous = ""
+
+    if sort_col is search_sort_options.customer_name:
+        order_by = carts.c.customer_name
+    elif sort_col is search_sort_options.item_sku:
+        order_by = catalog.c.name
+    elif sort_col is search_sort_options.timestamp:
+        order_by = transactions.c.created_at
+    elif sort_col is search_sort_options.line_item_total:
+        order_by = 'total'
+    else:
+        assert False
+
+    if sort_order is search_sort_order.asc:
+        order_by = sqlalchemy.desc(order_by)
+    elif sort_order is search_sort_order.desc:
+        order_by = sqlalchemy.asc(order_by)
+    else:
+        assert False
+
+    stmt = (
+        sqlalchemy.select(
+            transactions.c.id,
+            transactions.c.created_at,
+            catalog.c.name,
+            carts.c.customer_name,
+            catalog_ledger.c.delta,
+            catalog.c.price,
+            (catalog_ledger.c.delta * catalog.c.price) .label('total'),
+        )
+        .join(catalog_ledger, catalog_ledger.c.transaction_id == transactions.c.id)
+        .join(catalog, catalog.c.id == catalog_ledger.c.catalog_id)
+        .join(carts, carts.c.id == transactions.c.cart_id)
+        .offset(offset)
+        .order_by(order_by, transactions.c.id)
+    )
+
+    if customer_name != "":
+        stmt = stmt.where(carts.c.customer_name.ilike(f"%{customer_name}%"))
+
+    if potion_sku != "":
+        stmt = stmt.where(catalog.c.name.ilike(f"%{potion_sku}%"))
+
+    next = 0
+
+    with db.engine.connect() as connection:
+        result = connection.execute(stmt)
+        results = []
+        i = offset + 1
+
+        for id,created_at,name,customer_name,delta,price,total in result:
+            delta = abs(delta)
+            if delta > 1:
+                name += "s"
+
+            name = str(delta) + " " + name
+            results.append(
+                {
+                    "line_item_id": i,
+                    "item_sku": name,
+                    "customer_name": customer_name,
+                    "line_item_total": abs(total), 
+                    "timestamp": created_at,
+                }
+            )
+            i += 1
+
+            if 5 < len(results):
+                next = str(offset + 5)
+                break
+            
     return {
-        "previous": "",
-        "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
-            }
-        ],
+        "previous": previous,
+        "next": next,
+        "results": results,
     }
 
 
